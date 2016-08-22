@@ -5,6 +5,7 @@
  * copyright 2016
  */
 
+var keys = [], falling = false;
 
 var rectComponents = {
 
@@ -17,7 +18,7 @@ var rectComponents = {
 function startGame(){
 
     GameArea.start();
-    rectComponents.redRectangle = new rectComponent(25, 25, "red", 30, (GameArea.canvas.height / 2 - 25) );
+    rectComponents.redRectangle = new rectComponent(25, 25, "red", 30, GameArea.canvas.height - 25 );
 
 }
 
@@ -30,6 +31,7 @@ var GameArea = {
         this.context = this.canvas.getContext("2d");
         document.body.insertBefore(this.canvas, document.body.childNodes[0]);
         this.frameNo = 0;
+        this.scoreNo = 0;
         this.interval = setInterval(updateGameArea, 20);
     },
     clear : function(gameOver){
@@ -39,6 +41,11 @@ var GameArea = {
         ctx.font = "50px Arial";
         ctx.fillStyle = "gray";
         ctx.fillText("GAME OVER", 80, this.canvas.height / 2);
+    },
+    score : function(){
+        ctx.font = "10px Arial";
+        ctx.fillStyle = "blue";
+        ctx.fillText("SCORE: " + this.scoreNo, this.canvas.width - 85, 15);
     },
     stop : function() {
         clearInterval(this.interval);
@@ -60,10 +67,33 @@ function rectComponent(width, height, color, x, y) {
     this.height = height;
     this.x = x;
     this.y = y;
+    this.speedX = 0.0;
+    this.speedY = 0.0;
     this.update = function(){
         ctx = GameArea.context;
         ctx.fillStyle = color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
+
+        this.x += this.speedX;
+        this.y += this.speedY;
+
+        if (rectComponents.redRectangle.y < 0){
+            this.y = 0;
+            this.speedY = 0.0;
+        }
+        if (rectComponents.redRectangle.y > GameArea.canvas.height - 25){
+            this.y = GameArea.canvas.height - 25;
+            this.speedY = 0.0;
+            falling = false;
+        }
+        if (rectComponents.redRectangle.x < 0){
+            this.x = 0;
+            this.speedX = 0.0;
+        }
+        if (rectComponents.redRectangle.x > GameArea.canvas.width - 25){
+            this.x = GameArea.canvas.width - 25;
+        }   
+
     }
     this.crashWith = function(otherObj) {
         var myleft = this.x;
@@ -76,9 +106,9 @@ function rectComponent(width, height, color, x, y) {
         var otherbottom = otherObj.y + (otherObj.height);
         var crash = true;
         if ((mybottom < othertop) ||
-               (mytop > otherbottom) ||
-               (myright < otherleft) ||
-               (myleft > otherright)) {
+            (mytop > otherbottom) ||
+            (myright < otherleft) ||
+            (myleft > otherright)) {
            crash = false;
         }
         return crash;
@@ -101,6 +131,9 @@ function updateGameArea(){
     GameArea.clear();
     GameArea.frameNo += 1;
 
+    if (GameArea.scoreNo == 0 || everyInterval(10))
+        GameArea.scoreNo += 1;
+
     if (GameArea.frameNo == 1 || everyInterval(150)) {
         x = GameArea.canvas.width;
         minHeight = 20;
@@ -119,37 +152,59 @@ function updateGameArea(){
     }
     
     rectComponents.redRectangle.update();
+    GameArea.score();
+
+    rectComponents.redRectangle.speedX *= 0.97;
+    
+    //if (!falling)
+        rectComponents.redRectangle.speedY *= 0.97;
+    rectComponents.redRectangle.speedY += 0.2;
 
 }
 
-function movement(e){
-    
-    var speed = 3.0;
+function keyDown(e){
 
-    switch(e.keyCode)
-    {
-        //left
-        case 37:
-            rectComponents.redRectangle.x -= speed;
-            break;
-            
-        //up
-        case 38:
-            rectComponents.redRectangle.y -= speed;
-            break;
-            
-        //right
-        case 39:
-            rectComponents.redRectangle.x += speed;
-            break;
-        
-        //down
-        case 40:
-            rectComponents.redRectangle.y += speed;
-            break;
-        default: break;
+    keys[e.keyCode] = true;
+
+    if (keys[38]){ // up
+        if (rectComponents.redRectangle.speedY >= -2.0){
+            if (rectComponents.redRectangle.speedY > 0)
+                rectComponents.redRectangle.speedY = 0;
+            rectComponents.redRectangle.speedY -= 0.6;
+        }
+    }
+
+    if (keys[40]){ // down
+        if (rectComponents.redRectangle.speedY <= 1.5){
+            if (rectComponents.redRectangle.speedY < 0)
+                rectComponents.redRectangle.speedY = 0;
+            rectComponents.redRectangle.speedY += 0.3;
+        }
+    }
+
+    if (keys[37]){ // left
+        if (rectComponents.redRectangle.speedX >= -1.5){
+            if (rectComponents.redRectangle.speedX > 0)
+                rectComponents.redRectangle.speedX = 0;
+            rectComponents.redRectangle.speedX -= 0.3;
+        }
+    }
+
+    if (keys[39]){ // right
+        if (rectComponents.redRectangle.speedX <= 1.5){
+            if (rectComponents.redRectangle.speedX < 0)
+                rectComponents.redRectangle.speedX = 0;
+            rectComponents.redRectangle.speedX += 0.3;
+        }
     }
     
-};
+}
 
-window.addEventListener('keydown', movement, false);
+function keyUp(e){
+    keys[e.keyCode] = false;
+    falling = true;
+    //rectComponents.redRectangle.speedY += 1.6;
+}
+
+window.addEventListener('keydown', keyDown, false);
+window.addEventListener('keyup', keyUp, false);
