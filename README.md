@@ -1,8 +1,8 @@
 ## Gravity Rectangle ##
-* use Up Arrow to controll rectangle
+* use Arrows to controll rectangle
 * your aim is avoid walls
 
 ### Used technology ###
-* HTML5
+* HTML5 / CSS
 * Java Script
 * Canvas
