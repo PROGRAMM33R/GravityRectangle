@@ -5,11 +5,12 @@
  * copyright 2016
  */
 
-var keys = [], falling = false;
+var keys = [], scoreArray = [], movingUp = false, gameOver = false;
+var obstaclesSpeed = 1, generateFrequency = 150, changingFrequency = false, speedUp = 0.9;
 
 var rectComponents = {
 
-	"redRectangle": {},
+    "redRectangle": {},
     "obstacles": []
 
 };
@@ -18,7 +19,7 @@ var rectComponents = {
 function startGame(){
 
     GameArea.start();
-    rectComponents.redRectangle = new rectComponent(25, 25, "red", 30, GameArea.canvas.height - 25 );
+    rectComponents.redRectangle = new rectComponent(25, 25, "red", 30, GameArea.canvas.height / 2 );
 
 }
 
@@ -81,8 +82,8 @@ function rectComponent(width, height, color, x, y) {
             this.y = 0;
             this.speedY = 0.0;
         }
-        if (rectComponents.redRectangle.y > GameArea.canvas.height - 25){
-            this.y = GameArea.canvas.height - 25;
+        if (rectComponents.redRectangle.y > GameArea.canvas.height - 27){
+            this.y = GameArea.canvas.height - 27;
             this.speedY = 0.0;
             falling = false;
         }
@@ -120,10 +121,39 @@ function updateGameArea(){
 	
     var x, height, gap, minHeight, maxHeight, minGap, maxGap;
 
+    if (GameArea.scoreNo == 100){
+        obstaclesSpeed += 0.1;
+        generateFrequency = 100;
+        changingFrequency = true;
+    }
+    else if (GameArea.scoreNo == 200){
+        obstaclesSpeed += 0.2;
+        generateFrequency = 50;
+        changingFrequency = true;
+        speedUp = 1.3;
+    }
+    else if (GameArea.scoreNo == 300){
+        obstaclesSpeed += 0.2;
+        generateFrequency = 30;
+        changingFrequency = true;
+        speedUp = 1.6;
+    }
+
     for (var i = 0; i < rectComponents.obstacles.length; i++){
         if (rectComponents.redRectangle.crashWith( rectComponents.obstacles[i] )){
+            gameOver = true;
             GameArea.stop();
             GameArea.gameOver();
+
+            if (scoreArray.length == 0)
+                document.getElementById("highest-score").innerHTML = "Highest score: " + GameArea.scoreNo;
+            else {
+                var maxScore = Math.max.apply(null, scoreArray);
+                if (GameArea.scoreNo > maxScore)
+                    document.getElementById("highest-score").innerHTML = "Highest score: " + GameArea.scoreNo;  
+            }
+            scoreArray.push( parseInt(GameArea.scoreNo) );
+
             return;
         }
     }
@@ -134,7 +164,7 @@ function updateGameArea(){
     if (GameArea.scoreNo == 0 || everyInterval(10))
         GameArea.scoreNo += 1;
 
-    if (GameArea.frameNo == 1 || everyInterval(150)) {
+    if (GameArea.frameNo == 1 || everyInterval(generateFrequency) && !changingFrequency) {
         x = GameArea.canvas.width;
         minHeight = 20;
         maxHeight = 200;
@@ -144,10 +174,12 @@ function updateGameArea(){
         gap = Math.floor(Math.random() * (maxGap - minGap + 1) + minGap);
         rectComponents.obstacles.push(new rectComponent(10, height, "green", x, 0));
         rectComponents.obstacles.push(new rectComponent(10, x - height - gap, "green", x, height + gap));
+    } else {
+        changingFrequency = false;
     }
 
     for (var i = 0; i < rectComponents.obstacles.length; i++){
-        rectComponents.obstacles[i].x -= 1;
+        rectComponents.obstacles[i].x -= obstaclesSpeed;
         rectComponents.obstacles[i].update();
     }
     
@@ -156,9 +188,8 @@ function updateGameArea(){
 
     rectComponents.redRectangle.speedX *= 0.97;
     
-    //if (!falling)
-        rectComponents.redRectangle.speedY *= 0.97;
-    rectComponents.redRectangle.speedY += 0.2;
+    if (!movingUp)
+        rectComponents.redRectangle.speedY += 0.1;
 
 }
 
@@ -167,19 +198,16 @@ function keyDown(e){
     keys[e.keyCode] = true;
 
     if (keys[38]){ // up
-        if (rectComponents.redRectangle.speedY >= -2.0){
-            if (rectComponents.redRectangle.speedY > 0)
-                rectComponents.redRectangle.speedY = 0;
-            rectComponents.redRectangle.speedY -= 0.6;
-        }
+        if (rectComponents.redRectangle.speedY > 0)
+            rectComponents.redRectangle.speedY = 0;
+        rectComponents.redRectangle.speedY -= speedUp;
+        movingUp = true;
     }
 
     if (keys[40]){ // down
-        if (rectComponents.redRectangle.speedY <= 1.5){
-            if (rectComponents.redRectangle.speedY < 0)
-                rectComponents.redRectangle.speedY = 0;
-            rectComponents.redRectangle.speedY += 0.3;
-        }
+        if (rectComponents.redRectangle.speedY < 0)
+            rectComponents.redRectangle.speedY = 0;
+        rectComponents.redRectangle.speedY += 1.6;
     }
 
     if (keys[37]){ // left
@@ -197,13 +225,36 @@ function keyDown(e){
             rectComponents.redRectangle.speedX += 0.3;
         }
     }
+
+    if (keys[27]){ // ESC - restart game
+
+        if (gameOver){
+
+            obstaclesSpeed = 1;
+            generateFrequency = 150;
+            changingFrequency = false;
+            speedUp = 0.9;
+
+            rectComponents = {
+                "redRectangle": {},
+                "obstacles": []
+            };
+
+            startGame();
+        }
+
+        gameOver = false;
+
+    }
     
 }
 
 function keyUp(e){
+
+    if (keys[e.keyCode])
+        movingUp = false;
     keys[e.keyCode] = false;
-    falling = true;
-    //rectComponents.redRectangle.speedY += 1.6;
+
 }
 
 window.addEventListener('keydown', keyDown, false);

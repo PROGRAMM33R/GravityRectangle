@@ -9,7 +9,7 @@ html {
 	font-family: Arial;
 }
 
-.page {
+.page, table {
 	width: 550px;
 	margin: 0 auto;
 }
@@ -17,4 +17,10 @@ html {
 #footer {
 	font-size: 80%;
 	color: rgb(50, 50, 50);
+}
+
+#highest-score {
+	padding-top: 10px;
+	float: right;
+	font-weight: bold;
 }

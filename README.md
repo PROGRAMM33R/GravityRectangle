@@ -1,5 +1,6 @@
 ## Gravity Rectangle ##
 * use Arrows to controll rectangle
+* ESC to restart game
 * your aim is avoid walls
 
 ### Used technology ###
